@@ -90,6 +90,7 @@ export function RecipeCard({
 					</div>
 				)}
 
+				{/* Статус рецепта в левом верхнем углу */}
 				<button
 					onClick={(e) => {
 						e.stopPropagation();
@@ -114,7 +115,34 @@ export function RecipeCard({
 					)}
 				</button>
 
-				<div className='absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
+				{/* ВОТ ОН! Реальный блок КБЖУ, который выводится поверх картинки слева */}
+				<div className='absolute bottom-3 left-3 flex items-center gap-1 text-[10px] font-bold text-white flex-wrap z-10 drop-shadow-sm'>
+					<div className='flex items-center gap-0.5 bg-orange-600/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-orange-500/30'>
+						<Flame className='w-3 h-3' />
+						<span>
+							{r.calories || r.caloriesPerServing}{' '}
+							{language === 'ru' ? 'ккал' : 'kcal'}
+						</span>
+					</div>
+					{r.protein && (
+						<span className='bg-zinc-900/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-zinc-700/30'>
+							{language === 'ru' ? `Б: ${r.protein}г` : `E: ${r.protein}g`}
+						</span>
+					)}
+					{r.fat && (
+						<span className='bg-zinc-900/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-zinc-700/30'>
+							{language === 'ru' ? `Ж: ${r.fat}г` : `F: ${r.fat}g`}
+						</span>
+					)}
+					{r.carbs && (
+						<span className='bg-zinc-900/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-zinc-700/30'>
+							{language === 'ru' ? `У: ${r.carbs}г` : `KH: ${r.carbs}g`}
+						</span>
+					)}
+				</div>
+
+				{/* Кнопки управления в правом верхнем углу */}
+				<div className='absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10'>
 					<button
 						onClick={(e) => {
 							e.stopPropagation();
@@ -135,48 +163,38 @@ export function RecipeCard({
 					</button>
 				</div>
 
+				{/* Категория в правом нижнем углу */}
 				<div
-					className={`absolute bottom-3 left-3 px-2.5 py-1 ${theme.bgCard}/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-gray-100`}
+					className={`absolute bottom-3 right-3 px-2.5 py-1 ${theme.bgCard}/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-gray-100 z-10`}
 				>
 					{tCategory(recipe.recipe.category)}
 				</div>
 			</div>
 
-			<div className='p-4'>
+			{/* Текстовый блок под картинкой */}
+			<div className='p-4 flex flex-col flex-grow'>
 				<h3
 					className={`font-bold text-lg ${theme.textPrimary} mb-1 line-clamp-1`}
 				>
 					{translation.title}
 				</h3>
 				{translation.description && (
-					<p className={`text-sm ${theme.textSecondary} line-clamp-2 mb-3`}>
+					<p
+						className={`text-sm ${theme.textSecondary} line-clamp-2 mb-3 flex-grow`}
+					>
 						{translation.description}
 					</p>
 				)}
 
-				<div className='flex items-center justify-between'>
+				{/* Нижняя строчка: порции и источник */}
+				<div className='flex items-center justify-between mt-auto pt-2 border-t border-gray-50 dark:border-zinc-800/50'>
 					<div
-						className={`flex items-center gap-3 text-xs ${theme.textSecondary} flex-wrap`}
+						className={`flex items-center gap-3 text-xs ${theme.textSecondary}`}
 					>
 						<span className='flex items-center gap-1'>
 							<User className='w-3.5 h-3.5' />
 							{recipe.recipe.servings} {t('portions')}
 						</span>
-
-						{/* Восстановленный блок КБЖУ */}
-						{(r.caloriesPerServing || r.calories) && (
-							<span className='flex items-center gap-1'>
-								<Flame className='w-3.5 h-3.5 text-orange-500' />
-								{r.caloriesPerServing || r.calories} ккал
-								{r.protein && (
-									<span className='text-gray-400'>| Б: {r.protein}г</span>
-								)}
-								{r.fat && <span className='text-gray-400'>| Ж: {r.fat}г</span>}
-								{r.carbs && (
-									<span className='text-gray-400'>| У: {r.carbs}г</span>
-								)}
-							</span>
-						)}
 					</div>
 
 					{recipe.recipe.sourceUrl && (

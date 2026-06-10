@@ -268,21 +268,27 @@ export function RecipeDetail({
 								{Math.round(
 									(r.caloriesPerServing || r.calories) * scaling,
 								)}{' '}
-								ккал
+								{language === 'ru' ? ' ккал' : ' kcal'}
 							</span>
 							{r.protein && (
 								<span className='text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20'>
-									Б: {Math.round(r.protein * scaling)}г
+									{language === 'ru'
+										? `Б: ${Math.round(r.protein * scaling)}г`
+										: `E: ${Math.round(r.protein * scaling)}g`}
 								</span>
 							)}
 							{r.fat && (
 								<span className='text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg border border-amber-500/20'>
-									Ж: {Math.round(r.fat * scaling)}г
+									{language === 'ru'
+										? `Ж: ${Math.round(r.fat * scaling)}г`
+										: `F: ${Math.round(r.fat * scaling)}g`}
 								</span>
 							)}
 							{r.carbs && (
 								<span className='text-green-600 dark:text-green-400 bg-green-500/10 px-2 py-1 rounded-lg border border-green-500/20'>
-									У: {Math.round(r.carbs * scaling)}г
+									{language === 'ru'
+										? `У: ${Math.round(r.carbs * scaling)}г`
+										: `KH: ${Math.round(r.carbs * scaling)}g`}
 								</span>
 							)}
 						</div>
