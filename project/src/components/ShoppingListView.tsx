@@ -88,15 +88,18 @@ export function ShoppingListView({
 		recognition.onresult = (event: any) => {
 			const speechToText = event.results[0][0].transcript;
 
-			// ИСПРАВЛЕННАЯ ЛОГИКА: разбиваем текст на массив слов
-			const separators = /[,+]|\s+и\s+|\s+und\s+|\s+and\s+/gi;
-			const parsedItems = speechToText
-				.split(separators)
-				.map((s: string) => s.trim())
-				.filter((s: string) => s.length > 0);
+			// Разделяем строку по пробелам, запятым или союзам
+			// Этот regex учитывает: запятую, плюс, и, and, und
+			const itemsArray = speechToText.split(
+				/[,+\s]и\s+|[,+\s]and\s+|[,+\s]und\s+|[,+\s]+/gi,
+			);
 
-			// Добавляем каждый элемент отдельно
-			parsedItems.forEach((item: string) => onAdd(item));
+			itemsArray.forEach((item: string) => {
+				const cleanName = item.trim();
+				if (cleanName) {
+					onAdd(cleanName); // Вызываем добавление для каждого слова отдельно
+				}
+			});
 		};
 
 		recognition.start();
