@@ -11,6 +11,7 @@ import {
 	Trash2,
 	Edit2,
 	UtensilsCrossed,
+	Home,
 } from 'lucide-react';
 
 interface RecipeCardProps {
@@ -36,7 +37,6 @@ export function RecipeCard({
 		recipe.translations.find((tr) => tr.language === language) ||
 		recipe.translations.find((tr) => tr.language === 'ru')!;
 
-	// Временные тестовые данные, чтобы сразу увидеть КБЖУ на экране
 	if (r && !r.caloriesPerServing && !r.calories) {
 		r.calories = 420;
 		r.protein = 25;
@@ -90,7 +90,6 @@ export function RecipeCard({
 					</div>
 				)}
 
-				{/* Статус рецепта в левом верхнем углу */}
 				<button
 					onClick={(e) => {
 						e.stopPropagation();
@@ -115,7 +114,6 @@ export function RecipeCard({
 					)}
 				</button>
 
-				{/* Блок КБЖУ: светлый фон, темный контрастный текст */}
 				<div className='absolute bottom-3 left-3 flex items-center gap-1 text-[10px] font-bold text-zinc-800 flex-wrap z-10'>
 					<div className='flex items-center gap-0.5 bg-orange-500 text-white px-1.5 py-0.5 rounded-md shadow-sm'>
 						<Flame className='w-3 h-3' />
@@ -141,7 +139,6 @@ export function RecipeCard({
 					)}
 				</div>
 
-				{/* Кнопки управления в правом верхнем углу */}
 				<div className='absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10'>
 					<button
 						onClick={(e) => {
@@ -163,13 +160,11 @@ export function RecipeCard({
 					</button>
 				</div>
 
-				{/* Категория: отлично читается в светлой и в темной теме */}
 				<div className='absolute bottom-3 right-3 px-2.5 py-1 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 z-10'>
 					{tCategory(recipe.recipe.category)}
 				</div>
 			</div>
 
-			{/* Текстовый блок под картинкой */}
 			<div className='p-4 flex flex-col flex-grow'>
 				<h3
 					className={`font-bold text-lg ${theme.textPrimary} mb-1 line-clamp-1`}
@@ -184,7 +179,6 @@ export function RecipeCard({
 					</p>
 				)}
 
-				{/* Нижняя строчка: порции и источник */}
 				<div className='flex items-center justify-between mt-auto pt-2 border-t border-gray-50 dark:border-zinc-800/50'>
 					<div
 						className={`flex items-center gap-3 text-xs ${theme.textSecondary}`}
@@ -209,7 +203,6 @@ export function RecipeCard({
 					)}
 				</div>
 
-				{/* Новая залитая акцентная кнопка просмотра рецепта */}
 				<button
 					onClick={onView}
 					className={`mt-4 w-full py-2.5 px-4 bg-gradient-to-r ${theme.catFilterActive} text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md hover:brightness-110 active:scale-[0.98] text-sm`}
@@ -230,13 +223,12 @@ export function CategoryFilter({
 	selectedCategory,
 	onSelectCategory,
 }: CategoryFilterProps) {
-	const { t, tCategory } = useLanguage();
+	const { tCategory } = useLanguage();
 	const { theme } = useTheme();
 
 	const categories = [
-		{ id: 'all', label: t('all') },
+		{ id: 'all', label: <Home className='w-4 h-4' /> },
 		{ id: 'meat', label: tCategory('meat') },
-		{ id: 'poultry', label: tCategory('poultry') },
 		{ id: 'fish', label: tCategory('fish') },
 		{ id: 'vegetables', label: tCategory('vegetables') },
 		{ id: 'pastry', label: tCategory('pastry') },
@@ -244,16 +236,18 @@ export function CategoryFilter({
 		{ id: 'soup', label: tCategory('soup') },
 		{ id: 'salad', label: tCategory('salad') },
 		{ id: 'healthy', label: tCategory('healthy') },
+		{ id: 'preserves', label: tCategory('preserves') },
+		{ id: 'other', label: tCategory('other') },
 	];
 
 	return (
-		<div className='overflow-x-auto scrollbar-hide -mx-4 px-4'>
-			<div className='flex gap-2 min-w-max pb-2'>
+		<div className='w-full px-4 mb-4'>
+			<div className='flex flex-wrap gap-2 justify-center'>
 				{categories.map((cat) => (
 					<button
 						key={cat.id}
 						onClick={() => onSelectCategory(cat.id)}
-						className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+						className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 capitalize flex items-center justify-center ${
 							selectedCategory === cat.id
 								? `bg-gradient-to-r ${theme.catFilterActive} text-white shadow-md`
 								: theme.catFilterInactive
