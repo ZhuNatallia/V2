@@ -48,7 +48,27 @@ export function RecipeDetail({
 	const [checkedIngredients, setCheckedIngredients] = useState<Set<string>>(
 		new Set(),
 	);
-
+	const formatUnit = (unit: string) => {
+		if (!unit) return '';
+		const u = unit.toLowerCase().trim();
+		if (language === 'ru') {
+			if (u === 'g') return 'г';
+			if (u === 'kg') return 'кг';
+			if (u === 'ml') return 'мл';
+			if (u === 'l') return 'л';
+			if (u === 'pcs') return 'шт';
+			if (u === 'tsp') return 'ч.л.';
+			if (u === 'tbsp') return 'ст.л.';
+			if (u === 'cup') return 'ст.';
+		}
+		if (language === 'de') {
+			if (u === 'pcs') return 'Stk.';
+			if (u === 'tsp') return 'TL';
+			if (u === 'tbsp') return 'EL';
+			if (u === 'cup') return 'Becher';
+		}
+		return unit;
+	};
 	const r = recipe.recipe as any;
 
 	if (r && !r.caloriesPerServing && !r.calories) {
@@ -336,7 +356,7 @@ export function RecipeDetail({
 												className={`font-bold ${theme.textAccent} min-w-[70px] inline-block`}
 											>
 												{scaledQty % 1 === 0 ? scaledQty : scaledQty.toFixed(1)}{' '}
-												{ing.unit}
+												{formatUnit(ing.unit)}
 											</span>
 											<span className={`${theme.textPrimary} ml-2 font-medium`}>
 												{name}
