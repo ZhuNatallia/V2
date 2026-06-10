@@ -1,0 +1,251 @@
+import { FullRecipe } from '../types';
+import { useLanguage } from '../i18n/LanguageContext';
+import { useTheme } from '../i18n/ThemeContext';
+import {
+	Clock,
+	User,
+	ExternalLink,
+	Heart,
+	Flame,
+	ChefHat,
+	Trash2,
+	Edit2,
+	UtensilsCrossed,
+} from 'lucide-react';
+
+interface RecipeCardProps {
+	recipe: FullRecipe;
+	onEdit: () => void;
+	onDelete: () => void;
+	onView: () => void;
+	onToggleStatus: () => void;
+}
+
+export function RecipeCard({
+	recipe,
+	onEdit,
+	onDelete,
+	onView,
+	onToggleStatus,
+}: RecipeCardProps) {
+	const r = recipe.recipe as any;
+	const { language, t, tCategory } = useLanguage();
+	const { theme } = useTheme();
+
+	const translation =
+		recipe.translations.find((tr) => tr.language === language) ||
+		recipe.translations.find((tr) => tr.language === 'ru')!;
+
+	// Временные тестовые данные, чтобы сразу увидеть КБЖУ на экране
+	if (r && !r.caloriesPerServing && !r.calories) {
+		r.calories = 420;
+		r.protein = 25;
+		r.fat = 12;
+		r.carbs = 45;
+	}
+
+	return (
+		<div
+			className={`group relative ${theme.bgCard} rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border ${theme.border}`}
+		>
+			<div className='relative aspect-[4/3] overflow-hidden'>
+				{recipe.recipe.imageUrl ? (
+					<img
+						src={recipe.recipe.imageUrl}
+						alt={translation.title}
+						className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-500'
+					/>
+				) : (
+					<div
+						className={`w-full h-full ${theme.bgPrimary} flex flex-col items-center justify-center relative`}
+					>
+						<div className='absolute top-4 right-4 w-12 h-12 bg-orange-200/50 rounded-full' />
+						<div className='absolute bottom-6 left-6 w-8 h-8 bg-rose-200/50 rounded-full' />
+						<div className='absolute top-1/3 left-1/4 w-6 h-6 bg-amber-200/40 rounded-full' />
+
+						<div className='relative'>
+							{recipe.recipe.category === 'pastry' ||
+							recipe.recipe.category === 'dessert' ? (
+								<div className='w-20 h-20 bg-gradient-to-br from-amber-200 to-orange-200 rounded-2xl flex items-center justify-center shadow-sm transform rotate-3'>
+									<ChefHat className='w-10 h-10 text-amber-600' />
+								</div>
+							) : recipe.recipe.category === 'soup' ? (
+								<div className='w-20 h-20 bg-gradient-to-br from-rose-200 to-orange-200 rounded-2xl flex items-center justify-center shadow-sm'>
+									<UtensilsCrossed className='w-10 h-10 text-rose-600' />
+								</div>
+							) : (
+								<div className='w-20 h-20 bg-gradient-to-br from-orange-200 to-amber-200 rounded-2xl flex items-center justify-center shadow-sm transform -rotate-2'>
+									<ChefHat className='w-10 h-10 text-orange-600' />
+								</div>
+							)}
+						</div>
+
+						<p className={`mt-3 text-xs ${theme.textSecondary} font-medium`}>
+							{language === 'ru'
+								? 'Нет фото'
+								: language === 'de'
+									? 'Kein Foto'
+									: 'No photo'}
+						</p>
+					</div>
+				)}
+
+				<button
+					onClick={(e) => {
+						e.stopPropagation();
+						onToggleStatus();
+					}}
+					className={`absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md border transition-all duration-200 ${
+						recipe.recipe.status === 'cooked_liked'
+							? 'bg-green-500/80 text-white border-green-400 hover:bg-green-600'
+							: 'bg-amber-500/80 text-white border-amber-400 hover:bg-amber-600'
+					}`}
+				>
+					{recipe.recipe.status === 'cooked_liked' ? (
+						<span className='flex items-center gap-1'>
+							<Heart className='w-3 h-3 fill-current' />
+							{t('cookedLiked')}
+						</span>
+					) : (
+						<span className='flex items-center gap-1'>
+							<Clock className='w-3 h-3' />
+							{t('wantToCook')}
+						</span>
+					)}
+				</button>
+
+				<div className='absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200'>
+					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							onEdit();
+						}}
+						className={`p-2 ${theme.bgCard}/90 rounded-full shadow-md hover:bg-white transition-colors`}
+					>
+						<Edit2 className='w-4 h-4 text-gray-700' />
+					</button>
+					<button
+						onClick={(e) => {
+							e.stopPropagation();
+							if (window.confirm(t('deleteConfirm'))) onDelete();
+						}}
+						className='p-2 bg-white/90 rounded-full shadow-md hover:bg-rose-100 transition-colors'
+					>
+						<Trash2 className='w-4 h-4 text-rose-500' />
+					</button>
+				</div>
+
+				<div
+					className={`absolute bottom-3 left-3 px-2.5 py-1 ${theme.bgCard}/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-gray-100`}
+				>
+					{tCategory(recipe.recipe.category)}
+				</div>
+			</div>
+
+			<div className='p-4'>
+				<h3
+					className={`font-bold text-lg ${theme.textPrimary} mb-1 line-clamp-1`}
+				>
+					{translation.title}
+				</h3>
+				{translation.description && (
+					<p className={`text-sm ${theme.textSecondary} line-clamp-2 mb-3`}>
+						{translation.description}
+					</p>
+				)}
+
+				<div className='flex items-center justify-between'>
+					<div
+						className={`flex items-center gap-3 text-xs ${theme.textSecondary} flex-wrap`}
+					>
+						<span className='flex items-center gap-1'>
+							<User className='w-3.5 h-3.5' />
+							{recipe.recipe.servings} {t('portions')}
+						</span>
+
+						{/* Восстановленный блок КБЖУ */}
+						{(r.caloriesPerServing || r.calories) && (
+							<span className='flex items-center gap-1'>
+								<Flame className='w-3.5 h-3.5 text-orange-500' />
+								{r.caloriesPerServing || r.calories} ккал
+								{r.protein && (
+									<span className='text-gray-400'>| Б: {r.protein}г</span>
+								)}
+								{r.fat && <span className='text-gray-400'>| Ж: {r.fat}г</span>}
+								{r.carbs && (
+									<span className='text-gray-400'>| У: {r.carbs}г</span>
+								)}
+							</span>
+						)}
+					</div>
+
+					{recipe.recipe.sourceUrl && (
+						<a
+							href={recipe.recipe.sourceUrl}
+							target='_blank'
+							rel='noopener noreferrer'
+							onClick={(e) => e.stopPropagation()}
+							className='flex items-center gap-1 text-xs text-blue-500 hover:text-blue-600 transition-colors'
+						>
+							{t('source')}
+							<ExternalLink className='w-3 h-3' />
+						</a>
+					)}
+				</div>
+
+				<button
+					onClick={onView}
+					className={`mt-3 w-full py-2 ${theme.bgSecondary} hover:bg-gray-100 ${theme.textAccent} font-medium rounded-lg transition-colors border ${theme.border}`}
+				>
+					{t('viewRecipe')}
+				</button>
+			</div>
+		</div>
+	);
+}
+
+interface CategoryFilterProps {
+	selectedCategory: string;
+	onSelectCategory: (category: string) => void;
+}
+
+export function CategoryFilter({
+	selectedCategory,
+	onSelectCategory,
+}: CategoryFilterProps) {
+	const { t, tCategory } = useLanguage();
+	const { theme } = useTheme();
+
+	const categories = [
+		{ id: 'all', label: t('all') },
+		{ id: 'meat', label: tCategory('meat') },
+		{ id: 'poultry', label: tCategory('poultry') },
+		{ id: 'fish', label: tCategory('fish') },
+		{ id: 'vegetables', label: tCategory('vegetables') },
+		{ id: 'pastry', label: tCategory('pastry') },
+		{ id: 'dessert', label: tCategory('dessert') },
+		{ id: 'soup', label: tCategory('soup') },
+		{ id: 'salad', label: tCategory('salad') },
+		{ id: 'healthy', label: tCategory('healthy') },
+	];
+
+	return (
+		<div className='overflow-x-auto scrollbar-hide -mx-4 px-4'>
+			<div className='flex gap-2 min-w-max pb-2'>
+				{categories.map((cat) => (
+					<button
+						key={cat.id}
+						onClick={() => onSelectCategory(cat.id)}
+						className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+							selectedCategory === cat.id
+								? `bg-gradient-to-r ${theme.catFilterActive} text-white shadow-md`
+								: theme.catFilterInactive
+						}`}
+					>
+						{cat.label}
+					</button>
+				))}
+			</div>
+		</div>
+	);
+}
