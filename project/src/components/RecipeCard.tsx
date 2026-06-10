@@ -115,9 +115,9 @@ export function RecipeCard({
 					)}
 				</button>
 
-				{/* ВОТ ОН! Реальный блок КБЖУ, который выводится поверх картинки слева */}
-				<div className='absolute bottom-3 left-3 flex items-center gap-1 text-[10px] font-bold text-white flex-wrap z-10 drop-shadow-sm'>
-					<div className='flex items-center gap-0.5 bg-orange-600/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-orange-500/30'>
+				{/* Блок КБЖУ: светлый фон, темный контрастный текст */}
+				<div className='absolute bottom-3 left-3 flex items-center gap-1 text-[10px] font-bold text-zinc-800 flex-wrap z-10'>
+					<div className='flex items-center gap-0.5 bg-orange-500 text-white px-1.5 py-0.5 rounded-md shadow-sm'>
 						<Flame className='w-3 h-3' />
 						<span>
 							{r.calories || r.caloriesPerServing}{' '}
@@ -125,17 +125,17 @@ export function RecipeCard({
 						</span>
 					</div>
 					{r.protein && (
-						<span className='bg-zinc-900/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-zinc-700/30'>
+						<span className='bg-white/95 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-sm border border-zinc-200/50'>
 							{language === 'ru' ? `Б: ${r.protein}г` : `E: ${r.protein}g`}
 						</span>
 					)}
 					{r.fat && (
-						<span className='bg-zinc-900/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-zinc-700/30'>
+						<span className='bg-white/95 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-sm border border-zinc-200/50'>
 							{language === 'ru' ? `Ж: ${r.fat}г` : `F: ${r.fat}g`}
 						</span>
 					)}
 					{r.carbs && (
-						<span className='bg-zinc-900/80 backdrop-blur-sm px-1.5 py-0.5 rounded-md border border-zinc-700/30'>
+						<span className='bg-white/95 backdrop-blur-sm px-1.5 py-0.5 rounded-md shadow-sm border border-zinc-200/50'>
 							{language === 'ru' ? `У: ${r.carbs}г` : `KH: ${r.carbs}g`}
 						</span>
 					)}
@@ -163,10 +163,8 @@ export function RecipeCard({
 					</button>
 				</div>
 
-				{/* Категория в правом нижнем углу */}
-				<div
-					className={`absolute bottom-3 right-3 px-2.5 py-1 ${theme.bgCard}/90 backdrop-blur-sm rounded-full text-xs font-medium text-gray-700 border border-gray-100 z-10`}
-				>
+				{/* Категория: отлично читается в светлой и в темной теме */}
+				<div className='absolute bottom-3 right-3 px-2.5 py-1 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm rounded-full text-xs font-semibold text-zinc-700 dark:text-zinc-300 shadow-sm border border-zinc-200/50 dark:border-zinc-700/50 z-10'>
 					{tCategory(recipe.recipe.category)}
 				</div>
 			</div>
@@ -211,9 +209,10 @@ export function RecipeCard({
 					)}
 				</div>
 
+				{/* Новая залитая акцентная кнопка просмотра рецепта */}
 				<button
 					onClick={onView}
-					className={`mt-3 w-full py-2 ${theme.bgSecondary} hover:bg-gray-100 ${theme.textAccent} font-medium rounded-lg transition-colors border ${theme.border}`}
+					className={`mt-4 w-full py-2.5 px-4 bg-gradient-to-r ${theme.catFilterActive} text-white font-semibold rounded-xl transition-all duration-300 shadow-sm hover:shadow-md hover:brightness-110 active:scale-[0.98] text-sm`}
 				>
 					{t('viewRecipe')}
 				</button>
