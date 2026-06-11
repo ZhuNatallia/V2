@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useLanguage } from '../i18n/LanguageContext';
 import { useTheme } from '../i18n/ThemeContext';
-import { ShoppingItem, FilterType } from '../types';
+import { ShoppingItem } from '../types';
 import {
   Trash2,
   Copy,
@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Send,
   Share2,
-  Filter,
 } from 'lucide-react';
 
 interface ShoppingListViewProps {
@@ -19,6 +18,26 @@ interface ShoppingListViewProps {
   onRemove: (id: string) => void;
   onClear: () => void;
   onAdd: (name: string) => void;
+}
+
+// Парсит строку из голосового ввода в список отдельных продуктов.
+// Если есть явные разделители (запятая, "и", "+", etc.) — бьёт по ним.
+// Если разделителей нет — каждое слово считается отдельным продуктом.
+function parseVoiceText(text: string): string[] {
+  const hasExplicitSeparator = /[;,]|\s+и\s+|\s+and\s+|\+|\s+плюс\s+|\s+plus\s+/.test(text);
+
+  if (hasExplicitSeparator) {
+    return text
+      .split(/[;,]|\s+и\s+|\s+and\s+|\+|\s+плюс\s+|\s+plus\s+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  }
+
+  // Нет разделителей — каждое слово = отдельный продукт
+  return text
+    .split(/\s+/)
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
 }
 
 export function ShoppingListView({
@@ -33,18 +52,16 @@ export function ShoppingListView({
   const [newItem, setNewItem] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [filter, setFilter] = useState<FilterType>('all');
 
-  const getItemName = (item: ShoppingItem) => item.name || 'Продукт';
-
-  // Улучшенная функция голосового ввода
   const handleVoiceInput = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert(language === 'ru' ? 'Голосовой ввод не поддерживается вашим браузером' : 'Voice input not supported');
+      alert(language === 'ru'
+        ? 'Голосовой ввод не поддерживается вашим браузером'
+        : 'Voice input not supported in your browser');
       return;
     }
 
@@ -57,29 +74,10 @@ export function ShoppingListView({
     recognition.onend = () => setIsRecording(false);
 
     recognition.onresult = (event: any) => {
-      const speechToText = event.results[0][0].transcript.trim();
-
-      // Улучшенный парсинг с несколькими этапами
-      // Сначала заменяем известные разделители на специальный маркер
-      let processedText = speechToText
-        .replace(/[,;]/g, '|||SPLIT|||')
-        .replace(/\s+и\s+/gi, '|||SPLIT|||')
-        .replace(/\s+and\s+/gi, '|||SPLIT|||')
-        .replace(/\+/g, '|||SPLIT|||')
-        .replace(/\s+плюс\s+/gi, '|||SPLIT|||')
-        .replace(/\s+plus\s+/gi, '|||SPLIT|||')
-        .replace(/\n/g, '|||SPLIT|||');
-
-      // Разделяем по маркеру
-      const parsedItems = processedText
-        .split('|||SPLIT|||')
-        .map((item: string) => item.trim())
-        .filter((item: string) => item.length > 1);
-
-      // Добавляем каждый продукт отдельно с уникальным ID
-      parsedItems.forEach((item: string) => {
-        onAdd(item);
-      });
+      const transcript = event.results[0][0].transcript.trim();
+      const parsed = parseVoiceText(transcript);
+      // Каждый продукт добавляется отдельным вызовом — App создаёт уникальный ID
+      parsed.forEach(product => onAdd(product));
     };
 
     recognition.onerror = (event: any) => {
@@ -91,38 +89,21 @@ export function ShoppingListView({
   };
 
   const generateExportText = () => {
-    const header = language === 'ru' ? '🛒 *Список покупок:*' : '🛒 *Shopping List:*';
-    const lines = items.map((item, index) => `${index + 1}. ${getItemName(item)}`);
+    const header = language === 'ru' ? '🛒 Список покупок:' : '🛒 Shopping List:';
+    const lines = items.map((item, i) => `${i + 1}. ${item.name}`);
     return `${header}\n\n${lines.join('\n')}`;
   };
 
-  // Фильтрация элементов
-  const filteredItems = useMemo(() => {
-    switch (filter) {
-      case 'want':
-        return items.filter(item => !item.checked);
-      case 'cooked':
-        return items.filter(item => item.checked);
-      default:
-        return items;
-    }
-  }, [items, filter]);
-
-  const filterButtons: { type: FilterType; label: string; count: number }[] = [
-    { type: 'all', label: language === 'ru' ? 'Все' : 'All', count: items.length },
-    { type: 'want', label: language === 'ru' ? 'Хочу приготовить' : 'Want to cook', count: items.filter(i => !i.checked).length },
-    { type: 'cooked', label: language === 'ru' ? 'Приготовлено' : 'Cooked', count: items.filter(i => i.checked).length },
-  ];
-
   return (
     <div className='max-w-md mx-auto p-4 space-y-4'>
-      {/* Форма добавления */}
+
+      {/* Поле ввода */}
       <div className={`${theme.bgCard} p-4 rounded-xl border ${theme.border}`}>
         <div className='flex items-center gap-2'>
           <input
             value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
-            onKeyDown={(e) => {
+            onChange={e => setNewItem(e.target.value)}
+            onKeyDown={e => {
               if (e.key === 'Enter' && newItem.trim()) {
                 onAdd(newItem.trim());
                 setNewItem('');
@@ -134,7 +115,9 @@ export function ShoppingListView({
           <button
             onClick={handleVoiceInput}
             className={`p-2 rounded-full transition-colors ${
-              isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-200 hover:bg-gray-300'
+              isRecording
+                ? 'bg-red-500 text-white animate-pulse'
+                : 'bg-gray-200 hover:bg-gray-300'
             }`}
             title={language === 'ru' ? 'Голосовой ввод' : 'Voice input'}
           >
@@ -154,39 +137,12 @@ export function ShoppingListView({
         </div>
       </div>
 
-      {/* Фильтры на главной странице */}
-      {items.length > 0 && (
-        <div className={`${theme.bgCard} p-3 rounded-xl border ${theme.border}`}>
-          <div className='flex items-center gap-2 mb-2'>
-            <Filter className='w-4 h-4 text-gray-500' />
-            <span className={`text-sm font-medium ${theme.textSecondary}`}>
-              {language === 'ru' ? 'Фильтр:' : 'Filter:'}
-            </span>
-          </div>
-          <div className='flex flex-wrap gap-2'>
-            {filterButtons.map(({ type, label, count }) => (
-              <button
-                key={type}
-                onClick={() => setFilter(type)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  filter === type
-                    ? 'bg-green-500 text-white shadow-md'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {label} ({count})
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Кнопки шаринга */}
       {items.length > 0 && (
-        <div className='space-y-3'>
+        <div className='space-y-2'>
           <button
             onClick={() => {
-              navigator.clipboard.writeText(generateExportText().replace(/\*/g, ''));
+              navigator.clipboard.writeText(generateExportText());
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
@@ -231,59 +187,58 @@ export function ShoppingListView({
         </div>
       )}
 
-      {/* Нумерованный список без чекбоксов */}
+      {/* Нумерованный список */}
       <ol className='space-y-2'>
-        {filteredItems.map((item, index) => (
+        {items.map((item, index) => (
           <li
             key={item.id}
-            className={`flex items-center justify-between p-3 ${theme.bgCard} border ${theme.border} rounded-lg shadow-sm transition-all ${
-              item.checked ? 'bg-green-50 border-green-300' : ''
+            className={`flex items-center justify-between px-4 py-3 ${theme.bgCard} border ${theme.border} rounded-xl shadow-sm transition-all ${
+              item.checked ? 'bg-green-50 border-green-200' : ''
             }`}
           >
-            <div className='flex items-center gap-3 flex-1'>
-              <span className={`font-semibold ${item.checked ? 'text-green-600' : 'text-gray-500'}`}>
+            <div className='flex items-center gap-3 flex-1 min-w-0'>
+              <span className={`text-sm font-bold w-6 shrink-0 ${item.checked ? 'text-green-500' : 'text-gray-400'}`}>
                 {index + 1}.
               </span>
-              <span
-                className={`${theme.textPrimary} ${item.checked ? 'line-through text-gray-400' : ''}`}
-              >
-                {getItemName(item)}
+              <span className={`truncate ${theme.textPrimary} ${item.checked ? 'line-through text-gray-400' : ''}`}>
+                {item.name}
               </span>
             </div>
-            <button
-              onClick={() => onToggle(item.id)}
-              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                item.checked
-                  ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                  : 'bg-green-100 text-green-700 hover:bg-green-200'
-              }`}
-            >
-              {item.checked
-                ? (language === 'ru' ? 'Готово' : 'Done')
-                : (language === 'ru' ? 'Приготовить' : 'Cook')}
-            </button>
-            <button
-              onClick={() => onRemove(item.id)}
-              className='text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors ml-2'
-            >
-              <Trash2 className='w-4 h-4' />
-            </button>
+            <div className='flex items-center gap-1 shrink-0 ml-2'>
+              <button
+                onClick={() => onToggle(item.id)}
+                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                  item.checked
+                    ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                }`}
+              >
+                {item.checked
+                  ? (language === 'ru' ? 'Готово' : 'Done')
+                  : (language === 'ru' ? 'Готово?' : 'Done?')}
+              </button>
+              <button
+                onClick={() => onRemove(item.id)}
+                className='p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors'
+              >
+                <Trash2 className='w-4 h-4' />
+              </button>
+            </div>
           </li>
         ))}
       </ol>
 
-      {/* Пустое состояние для фильтра */}
-      {filteredItems.length === 0 && items.length > 0 && (
-        <div className={`text-center py-8 ${theme.textSecondary}`}>
-          {language === 'ru' ? 'Нет элементов в выбранной категории' : 'No items in selected category'}
+      {items.length === 0 && (
+        <div className={`text-center py-12 ${theme.textSecondary}`}>
+          <p className='text-4xl mb-3'>🛒</p>
+          <p>{language === 'ru' ? 'Список пуст. Добавьте продукты!' : 'List is empty. Add some items!'}</p>
         </div>
       )}
 
-      {/* Кнопка очистки */}
       {items.length > 0 && (
         <button
           onClick={onClear}
-          className='w-full py-2 text-red-500 border border-red-200 rounded-lg text-sm hover:bg-red-50 transition-colors'
+          className='w-full py-2 text-red-500 border border-red-200 rounded-xl text-sm hover:bg-red-50 transition-colors'
         >
           {language === 'ru' ? 'Очистить всё' : 'Clear all'}
         </button>
