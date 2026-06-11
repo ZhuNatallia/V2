@@ -10,7 +10,6 @@ import {
   MessageCircle,
   Send,
   Share2,
-  Check,
   Filter,
 } from 'lucide-react';
 
@@ -36,16 +35,16 @@ export function ShoppingListView({
   const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<FilterType>('all');
 
-  const getItemName = (item: ShoppingItem) =>
-    item.name || 'Продукт';
+  const getItemName = (item: ShoppingItem) => item.name || 'Продукт';
 
   // Улучшенная функция голосового ввода
   const handleVoiceInput = () => {
     const SpeechRecognition =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
+
     if (!SpeechRecognition) {
-      alert(language === 'ru' ? 'Голосовой ввод не поддерживается' : 'Voice input not supported');
+      alert(language === 'ru' ? 'Голосовой ввод не поддерживается вашим браузером' : 'Voice input not supported');
       return;
     }
 
@@ -60,13 +59,24 @@ export function ShoppingListView({
     recognition.onresult = (event: any) => {
       const speechToText = event.results[0][0].transcript.trim();
 
-      // Улучшенный парсинг: запятая, точка с запятой, "и", "and", "+", переносы строк
-      const parsedItems = speechToText
-        .split(/[;,]|\s+и\s+|\s+and\s+|\+|\s+плюс\s+|\s+plus\s+|\n/)
-        .map((item: string) => item.trim())
-        .filter((item: string) => item.length > 0);
+      // Улучшенный парсинг с несколькими этапами
+      // Сначала заменяем известные разделители на специальный маркер
+      let processedText = speechToText
+        .replace(/[,;]/g, '|||SPLIT|||')
+        .replace(/\s+и\s+/gi, '|||SPLIT|||')
+        .replace(/\s+and\s+/gi, '|||SPLIT|||')
+        .replace(/\+/g, '|||SPLIT|||')
+        .replace(/\s+плюс\s+/gi, '|||SPLIT|||')
+        .replace(/\s+plus\s+/gi, '|||SPLIT|||')
+        .replace(/\n/g, '|||SPLIT|||');
 
-      // Добавляем каждый продукт отдельно с уникальным ID (через onAdd в App.tsx)
+      // Разделяем по маркеру
+      const parsedItems = processedText
+        .split('|||SPLIT|||')
+        .map((item: string) => item.trim())
+        .filter((item: string) => item.length > 1);
+
+      // Добавляем каждый продукт отдельно с уникальным ID
       parsedItems.forEach((item: string) => {
         onAdd(item);
       });
@@ -81,11 +91,8 @@ export function ShoppingListView({
   };
 
   const generateExportText = () => {
-    const header =
-      language === 'ru' ? '🛒 *Список покупок:*' : '🛒 *Shopping List:*';
-    const lines = items.map(
-      (item, index) => `${index + 1}. ${getItemName(item)}${item.checked ? ' ✓' : ''}`,
-    );
+    const header = language === 'ru' ? '🛒 *Список покупок:*' : '🛒 *Shopping List:*';
+    const lines = items.map((item, index) => `${index + 1}. ${getItemName(item)}`);
     return `${header}\n\n${lines.join('\n')}`;
   };
 
@@ -109,6 +116,7 @@ export function ShoppingListView({
 
   return (
     <div className='max-w-md mx-auto p-4 space-y-4'>
+      {/* Форма добавления */}
       <div className={`${theme.bgCard} p-4 rounded-xl border ${theme.border}`}>
         <div className='flex items-center gap-2'>
           <input
@@ -121,14 +129,16 @@ export function ShoppingListView({
               }
             }}
             className={`flex-1 p-2 rounded-lg border ${theme.inputBg} ${theme.textPrimary}`}
-            placeholder={language === 'ru' ? 'Добавить...' : 'Add item...'}
+            placeholder={language === 'ru' ? 'Добавить продукт...' : 'Add item...'}
           />
           <button
             onClick={handleVoiceInput}
-            className={`p-2 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-200 hover:bg-gray-300'}`}
+            className={`p-2 rounded-full transition-colors ${
+              isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-gray-200 hover:bg-gray-300'
+            }`}
             title={language === 'ru' ? 'Голосовой ввод' : 'Voice input'}
           >
-            <Mic className='w-4 h-4' />
+            <Mic className='w-5 h-5' />
           </button>
           <button
             onClick={() => {
@@ -144,12 +154,12 @@ export function ShoppingListView({
         </div>
       </div>
 
-      {/* Фильтры */}
+      {/* Фильтры на главной странице */}
       {items.length > 0 && (
         <div className={`${theme.bgCard} p-3 rounded-xl border ${theme.border}`}>
           <div className='flex items-center gap-2 mb-2'>
             <Filter className='w-4 h-4 text-gray-500' />
-            <span className={`text-sm ${theme.textSecondary}`}>
+            <span className={`text-sm font-medium ${theme.textSecondary}`}>
               {language === 'ru' ? 'Фильтр:' : 'Filter:'}
             </span>
           </div>
@@ -158,9 +168,9 @@ export function ShoppingListView({
               <button
                 key={type}
                 onClick={() => setFilter(type)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                   filter === type
-                    ? 'bg-blue-500 text-white shadow-md'
+                    ? 'bg-green-500 text-white shadow-md'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -171,13 +181,12 @@ export function ShoppingListView({
         </div>
       )}
 
+      {/* Кнопки шаринга */}
       {items.length > 0 && (
         <div className='space-y-3'>
           <button
             onClick={() => {
-              navigator.clipboard.writeText(
-                generateExportText().replace(/\*/g, ''),
-              );
+              navigator.clipboard.writeText(generateExportText().replace(/\*/g, ''));
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
@@ -191,33 +200,21 @@ export function ShoppingListView({
 
           <div className='grid grid-cols-4 gap-2'>
             <button
-              onClick={() =>
-                window.open(
-                  `https://t.me/share/url?url=${encodeURIComponent(generateExportText())}`,
-                )
-              }
+              onClick={() => window.open(`https://t.me/share/url?url=${encodeURIComponent(generateExportText())}`)}
               className='p-2 flex justify-center bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors'
               title='Telegram'
             >
               <Send size={18} />
             </button>
             <button
-              onClick={() =>
-                window.open(
-                  `https://api.whatsapp.com/send?text=${encodeURIComponent(generateExportText())}`,
-                )
-              }
+              onClick={() => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(generateExportText())}`)}
               className='p-2 flex justify-center bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors'
               title='WhatsApp'
             >
               <MessageCircle size={18} />
             </button>
             <button
-              onClick={() =>
-                window.open(
-                  `viber://forward?text=${encodeURIComponent(generateExportText())}`,
-                )
-              }
+              onClick={() => window.open(`viber://forward?text=${encodeURIComponent(generateExportText())}`)}
               className='p-2 flex justify-center bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors'
               title='Viber'
             >
@@ -234,36 +231,40 @@ export function ShoppingListView({
         </div>
       )}
 
-      <ol className='space-y-2 list-decimal list-inside'>
-        {filteredItems.map((item) => (
+      {/* Нумерованный список без чекбоксов */}
+      <ol className='space-y-2'>
+        {filteredItems.map((item, index) => (
           <li
             key={item.id}
             className={`flex items-center justify-between p-3 ${theme.bgCard} border ${theme.border} rounded-lg shadow-sm transition-all ${
-              item.checked ? 'opacity-60' : ''
+              item.checked ? 'bg-green-50 border-green-300' : ''
             }`}
           >
             <div className='flex items-center gap-3 flex-1'>
-              <button
-                onClick={() => onToggle(item.id)}
-                className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
-                  item.checked
-                    ? 'bg-green-500 border-green-500 text-white'
-                    : 'border-gray-300 hover:border-green-400'
-                }`}
-              >
-                {item.checked && <Check className='w-4 h-4' />}
-              </button>
+              <span className={`font-semibold ${item.checked ? 'text-green-600' : 'text-gray-500'}`}>
+                {index + 1}.
+              </span>
               <span
-                className={`${theme.textPrimary} ${
-                  item.checked ? 'line-through text-gray-400' : ''
-                }`}
+                className={`${theme.textPrimary} ${item.checked ? 'line-through text-gray-400' : ''}`}
               >
                 {getItemName(item)}
               </span>
             </div>
             <button
+              onClick={() => onToggle(item.id)}
+              className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                item.checked
+                  ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                  : 'bg-green-100 text-green-700 hover:bg-green-200'
+              }`}
+            >
+              {item.checked
+                ? (language === 'ru' ? 'Готово' : 'Done')
+                : (language === 'ru' ? 'Приготовить' : 'Cook')}
+            </button>
+            <button
               onClick={() => onRemove(item.id)}
-              className='text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors'
+              className='text-red-500 p-2 hover:bg-red-50 rounded-lg transition-colors ml-2'
             >
               <Trash2 className='w-4 h-4' />
             </button>
@@ -271,14 +272,14 @@ export function ShoppingListView({
         ))}
       </ol>
 
+      {/* Пустое состояние для фильтра */}
       {filteredItems.length === 0 && items.length > 0 && (
         <div className={`text-center py-8 ${theme.textSecondary}`}>
-          {language === 'ru'
-            ? 'Нет элементов в выбранной категории'
-            : 'No items in selected category'}
+          {language === 'ru' ? 'Нет элементов в выбранной категории' : 'No items in selected category'}
         </div>
       )}
 
+      {/* Кнопка очистки */}
       {items.length > 0 && (
         <button
           onClick={onClear}
