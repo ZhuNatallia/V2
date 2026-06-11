@@ -60,13 +60,13 @@ export function ShoppingListView({
     recognition.onresult = (event: any) => {
       const speechToText = event.results[0][0].transcript.trim();
 
-      // Улучшенный парсинг: разделяем по запятым, "и", "and", "+", переносам строк
+      // Улучшенный парсинг: запятая, точка с запятой, "и", "and", "+", переносы строк
       const parsedItems = speechToText
-        .split(/,|\s+и\s+|\s+and\s+|\+|\n/)
+        .split(/[;,]|\s+и\s+|\s+and\s+|\+|\s+плюс\s+|\s+plus\s+|\n/)
         .map((item: string) => item.trim())
         .filter((item: string) => item.length > 0);
 
-      // Добавляем каждый элемент с уникальным ID (в App.tsx через onAdd)
+      // Добавляем каждый продукт отдельно с уникальным ID (через onAdd в App.tsx)
       parsedItems.forEach((item: string) => {
         onAdd(item);
       });
@@ -234,7 +234,7 @@ export function ShoppingListView({
         </div>
       )}
 
-      <ul className='space-y-2'>
+      <ol className='space-y-2 list-decimal list-inside'>
         {filteredItems.map((item) => (
           <li
             key={item.id}
@@ -269,7 +269,7 @@ export function ShoppingListView({
             </button>
           </li>
         ))}
-      </ul>
+      </ol>
 
       {filteredItems.length === 0 && items.length > 0 && (
         <div className={`text-center py-8 ${theme.textSecondary}`}>
