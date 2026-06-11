@@ -1,208 +1,100 @@
-import { useState, useMemo } from 'react';
+import { useState, useCallback } from 'react';
+import { ShoppingListView } from './components/ShoppingListView';
 import { LanguageProvider, useLanguage } from './i18n/LanguageContext';
 import { ThemeProvider, useTheme } from './i18n/ThemeContext';
-import { Header, BottomNav } from './components/Header';
-import { RecipeCard, CategoryFilter } from './components/RecipeCard';
-import { AddRecipeModal } from './components/AddRecipeModal';
-import { RecipeDetail } from './components/RecipeDetail';
-import { ShoppingListView } from './components/ShoppingListView';
-import { UtilitiesView } from './components/UtilitiesView';
-import { useRecipeStore } from './hooks/useRecipeStore';
-import { FullRecipe } from './types';
-import { Search, ChefHat } from 'lucide-react';
-
-type AppView = 'recipes' | 'shopping' | 'utilities';
+import { ShoppingItem } from './types';
+import { Sun, Moon, Languages } from 'lucide-react';
 
 function AppContent() {
-  const { t } = useLanguage();
-  const { theme } = useTheme();
-  const {
-    recipes,
-    shoppingList,
-    addRecipe,
-    updateRecipe,
-    deleteRecipe,
-    toggleRecipeStatus,
-    addToShoppingList,
-    toggleShoppingItem,
-    removeFromShoppingList,
-    clearShoppingList,
-    addShoppingItem,
-  } = useRecipeStore();
+  const { language, setLanguage } = useLanguage();
+  const { theme, isDark, toggleTheme } = useTheme();
+  const [items, setItems] = useState<ShoppingItem[]>([]);
 
-  const [activeView, setActiveView] = useState<AppView>('recipes');
-  const [selectedRecipe, setSelectedRecipe] = useState<FullRecipe | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [editingRecipe, setEditingRecipe] = useState<FullRecipe | null>(null);
+  // Добавление элемента с уникальным ID через crypto.randomUUID()
+  const handleAdd = useCallback((name: string) => {
+    const newItem: ShoppingItem = {
+      id: crypto.randomUUID(), // Уникальный ID для каждого элемента
+      name,
+      checked: false,
+      createdAt: new Date(),
+    };
+    setItems((prev) => [...prev, newItem]);
+  }, []);
 
-  const filteredRecipes = useMemo(() => {
-    let filtered = [...recipes];
+  // Переключение статуса checked
+  const handleToggle = useCallback((id: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, checked: !item.checked } : item
+      )
+    );
+  }, []);
 
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter((r) => r.recipe.category === selectedCategory);
-    }
+  // Удаление одного элемента по уникальному ID
+  const handleRemove = useCallback((id: string) => {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  }, []);
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((r) => {
-        const hasMatch = r.translations.some(
-          (t) =>
-            t.title.toLowerCase().includes(query) ||
-            t.description?.toLowerCase().includes(query)
-        );
-        return hasMatch;
-      });
-    }
-
-    return filtered;
-  }, [recipes, selectedCategory, searchQuery]);
-
-  const handleOpenRecipe = (recipe: FullRecipe) => {
-    setSelectedRecipe(recipe);
-  };
-
-  const handleCloseRecipe = () => {
-    setSelectedRecipe(null);
-    setEditingRecipe(null);
-  };
-
-  const handleEditRecipe = () => {
-    setEditingRecipe(selectedRecipe);
-    setSelectedRecipe(null);
-    setShowAddModal(true);
-  };
-
-  const handleAddToShoppingList = (name: string, qty: number, unit: string) => {
-    addToShoppingList(name, qty, unit, selectedRecipe?.recipe.id);
-  };
-
-  const handleSaveRecipe = (recipe: FullRecipe) => {
-    if (editingRecipe) {
-      updateRecipe(recipe);
-    } else {
-      addRecipe(recipe);
-    }
-    setEditingRecipe(null);
-  };
-
-  const openAddModal = () => {
-    setShowAddModal(true);
-    setEditingRecipe(null);
-  };
+  // Очистка всего списка
+  const handleClear = useCallback(() => {
+    setItems([]);
+  }, []);
 
   return (
-    <div className={`min-h-screen ${theme.bgPrimary}`}>
-      <Header onAddRecipe={openAddModal} />
+    <div className={`min-h-screen ${theme.bgMain} ${theme.textPrimary}`}>
+      {/* Header */}
+      <header className={`${theme.bgCard} border-b ${theme.border} sticky top-0 z-10`}>
+        <div className='max-w-md mx-auto p-4 flex items-center justify-between'>
+          <h1 className='text-xl font-bold'>
+            {language === 'ru' ? '🛒 Список покупок' : '🛒 Shopping List'}
+          </h1>
+          <div className='flex items-center gap-2'>
+            <button
+              onClick={() => setLanguage(language === 'ru' ? 'en' : 'ru')}
+              className='p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors'
+              title='Switch language'
+            >
+              <Languages className='w-5 h-5' />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className='p-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors'
+              title='Toggle theme'
+            >
+              {isDark ? <Sun className='w-5 h-5' /> : <Moon className='w-5 h-5' />}
+            </button>
+          </div>
+        </div>
+      </header>
 
-      <main className="max-w-7xl mx-auto pb-24 pt-4">
-        {activeView === 'recipes' && (
-          <>
-            <div className="px-4 mb-4">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder={t('searchPlaceholder')}
-                  className={`w-full pl-12 pr-4 py-3 ${theme.bgCard} rounded-xl border ${theme.border} focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all shadow-sm`}
-                />
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <CategoryFilter
-                selectedCategory={selectedCategory}
-                onSelectCategory={setSelectedCategory}
-              />
-            </div>
-
-            {filteredRecipes.length > 0 ? (
-              <div className="px-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredRecipes.map((recipe) => (
-                  <RecipeCard
-                    key={recipe.recipe.id}
-                    recipe={recipe}
-                    onView={() => handleOpenRecipe(recipe)}
-                    onEdit={() => {
-                      setEditingRecipe(recipe);
-                      setShowAddModal(true);
-                    }}
-                    onDelete={() => deleteRecipe(recipe.recipe.id)}
-                    onToggleStatus={() => toggleRecipeStatus(recipe.recipe.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 px-4">
-                <div className={`w-20 h-20 mx-auto bg-gradient-to-br from-amber-100 to-rose-100 rounded-full flex items-center justify-center mb-4`}>
-                  <ChefHat className="w-10 h-10 text-amber-300" />
-                </div>
-                <p className={`${theme.textSecondary} text-lg`}>{t('noRecipes')}</p>
-                <button
-                  onClick={openAddModal}
-                  className={`mt-4 px-6 py-2 ${theme.accentGradient} ${theme.accentHover} text-white rounded-full font-medium shadow-md hover:shadow-lg transition-all`}
-                >
-                  {t('addRecipe')}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {activeView === 'shopping' && (
-          <ShoppingListView
-            items={shoppingList}
-            onToggle={toggleShoppingItem}
-            onRemove={removeFromShoppingList}
-            onClear={clearShoppingList}
-            onAdd={addShoppingItem}
-          />
-        )}
-
-        {activeView === 'utilities' && <UtilitiesView recipes={recipes} />}
+      {/* Main content */}
+      <main className='py-4'>
+        <ShoppingListView
+          items={items}
+          onToggle={handleToggle}
+          onRemove={handleRemove}
+          onClear={handleClear}
+          onAdd={handleAdd}
+        />
       </main>
 
-      <BottomNav
-        activeView={activeView}
-        onViewChange={setActiveView}
-      />
-
-      {selectedRecipe && (
-        <RecipeDetail
-          recipe={selectedRecipe}
-          onClose={handleCloseRecipe}
-          onEdit={handleEditRecipe}
-          onDelete={() => {
-            deleteRecipe(selectedRecipe.recipe.id);
-            handleCloseRecipe();
-          }}
-          onAddToShoppingList={handleAddToShoppingList}
-        />
-      )}
-
-      <AddRecipeModal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setEditingRecipe(null);
-        }}
-        onSave={handleSaveRecipe}
-        editingRecipe={editingRecipe}
-      />
+      {/* Footer */}
+      <footer className={`max-w-md mx-auto p-4 text-center ${theme.textSecondary} text-sm`}>
+        {language === 'ru'
+          ? `Всего: ${items.length} | Готово: ${items.filter(i => i.checked).length}`
+          : `Total: ${items.length} | Done: ${items.filter(i => i.checked).length}`}
+      </footer>
     </div>
   );
 }
 
 function App() {
   return (
-    <ThemeProvider>
-      <LanguageProvider>
+    <LanguageProvider>
+      <ThemeProvider>
         <AppContent />
-      </LanguageProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
 
